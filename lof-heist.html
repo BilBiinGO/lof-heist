@@ -424,26 +424,24 @@ let tickH=null,pollH=null,projH=null;
 let sceneIdx=0,picks={},hintSeen={},pendingUnlock=null;
  
 // ═══════════════════ CLOUD SYNC via Artifact shared storage ═══════════════════
-// Uses window.storage (shared:true) so every team + facilitator + projector
+// Uses Firebase Realtime Database so every team + facilitator + projector
 // sharing this same artifact link sync through the same game state.
-async function dbSet(id, state) {
+async function dbSet(id, data) {
   try {
-    const result = await window.storage.set('game:' + id, JSON.stringify(state), true);
-    return !!result;
-  } catch (e) {
-    console.error('dbSet failed:', e);
-    return false;
-  }
+    await fetch(`https://lof-heist-default-rtdb.firebaseio.com/games/${id}.json`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('dbSet error', e); }
 }
+
 async function dbGet(id) {
   try {
-    const result = await window.storage.get('game:' + id, true);
-    if (!result) return null;
-    return JSON.parse(result.value);
-  } catch (e) {
-    // Key doesn't exist yet (no game with that code) — not a real error
-    return null;
-  }
+    const resp = await fetch(`https://lof-heist-default-rtdb.firebaseio.com/games/${id}.json`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
 }
  
 // ═══════════════════ ROUTING ═══════════════════
