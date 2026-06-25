@@ -490,14 +490,14 @@ function renderFacClk(){const el=document.getElementById('fac-clk');el.textConte
 function renderSB(){
   const s=[...GS.teams].sort((a,b)=>b.score-a.score);
   document.getElementById('fac-sb').innerHTML=s.map((t,i)=>{
-    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div></td>`;}).join('');
+    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f=(GS.scenesFirstCracked||[])[n]===t.id;return`<td style="text-align:center"><div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div></td>`;}).join('');
     const r=i<3?`<span class="rnk r${i+1}">${i+1}</span>`:`<span class="rnk">${i+1}</span>`;
     return`<tr class="${i===0?'top':''}"><td class="sbn">${r}${t.name}</td>${ps}<td style="text-align:center"><div class="pip${t.bonusCompleted?' bx':''}">${t.bonusCompleted?'★':'—'}</div></td><td class="sbp">${t.score.toLocaleString()}</td></tr>`;
   }).join('');
 }
 function renderCards(){
   document.getElementById('fac-cards').innerHTML=GS.teams.map(t=>{
-    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div>`;}).join('');
+    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f=(GS.scenesFirstCracked||[])[n]===t.id;return`<div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div>`;}).join('');
     return`<div class="tcard"><div class="tcard-n">${t.name}</div><div class="tcard-s">${t.score.toLocaleString()}</div><div class="tcard-st">${(t.scenesCompleted||[]).length>=4?'✅ Complete':'Scene '+(t.currentScene+1)+' / 4'}</div><div class="tcard-pips">${ps}</div><div class="tcard-btns"><button class="mb gy" onclick="grantHint('${t.id}')">💡 Hint</button><button class="mb${t.bonusUnlocked?' gr':''}" onclick="grantBonus('${t.id}')" ${t.bonusUnlocked?'disabled':''}>${t.bonusUnlocked?'✓ Bonus':'🔓 Bonus'}</button></div></div>`;
   }).join('');
 }
@@ -623,10 +623,10 @@ async function submitCode(idx){
   if(!f)return;GS=f;
   const team=GS.teams.find(t=>t.id===myTeamId);
   if(!team||(team.scenesCompleted||[]).includes(idx))return;
-  const isFirst=!GS.scenesFirstCracked[idx];
+  const isFirst=!(GS.scenesFirstCracked||[])[idx];
   const pts=(isFirst?PTS.first:PTS.crack)+(3*PTS.perQ);
   team.score+=pts;(team.scenesCompleted||[]).push(idx);team.currentScene=Math.min(3,idx+1);
-  if(isFirst)GS.scenesFirstCracked[idx]=myTeamId;
+  if(isFirst)(GS.scenesFirstCracked||[])[idx]=myTeamId;
   ann(`${isFirst?'🥇 FIRST! ':'✅ '}${team.name} cracked Scene ${idx+1} +${pts}pts`,isFirst?'hi':'');
   syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);
   pendingUnlock={idx,pts,first:isFirst};
@@ -674,7 +674,7 @@ function renderProj(){
   pc.textContent=fmt(tr);pc.className='proj-clk'+(tr<300?' urg':'');
   const s=[...GS.teams].sort((a,b)=>b.score-a.score);const m=['🥇','🥈','🥉',''];
   document.getElementById('proj-body').innerHTML=s.map((t,i)=>{
-    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f2=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="ppip${d?(f2?' ft':' dn'):''}">${d?'✓':n+1}</div></td>`;}).join('');
+    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f2=(GS.scenesFirstCracked||[])[n]===t.id;return`<td style="text-align:center"><div class="ppip${d?(f2?' ft':' dn'):''}">${d?'✓':n+1}</div></td>`;}).join('');
     return`<tr class="${i===0?'pr1':''}"><td style="font-size:clamp(14px,2.5vw,22px)">${m[Math.min(i,3)]||i+1}</td><td class="pn">${t.name}</td>${ps}<td style="text-align:center"><div class="ppip${t.bonusCompleted?' bx':''}">${t.bonusCompleted?'★':'—'}</div></td><td class="psc">${t.score.toLocaleString()}</td></tr>`;
   }).join('');
 }
