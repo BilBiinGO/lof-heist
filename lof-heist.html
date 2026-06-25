@@ -541,6 +541,7 @@ async function lookupGame(){
   const state=await dbGet(code);
   syncing(false);btn.textContent='Find Game →';btn.disabled=false;
   if(!state){showE('join-err','Game not found. Make sure the facilitator has created the game first, and you are using the same URL they used to create it.');return;}
+  if (!game.scenes) game.scenes = SCENES;
   document.getElementById('join-err').style.display='none';
   myGameId=code;GS=state;
   document.getElementById('join-team-list').innerHTML=state.teams.map(t=>
