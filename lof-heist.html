@@ -490,15 +490,15 @@ function renderFacClk(){const el=document.getElementById('fac-clk');el.textConte
 function renderSB(){
   const s=[...GS.teams].sort((a,b)=>b.score-a.score);
   document.getElementById('fac-sb').innerHTML=s.map((t,i)=>{
-    const ps=[0,1,2,3].map(n=>{const d=t.scenesCompleted.includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div></td>`;}).join('');
+    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div></td>`;}).join('');
     const r=i<3?`<span class="rnk r${i+1}">${i+1}</span>`:`<span class="rnk">${i+1}</span>`;
     return`<tr class="${i===0?'top':''}"><td class="sbn">${r}${t.name}</td>${ps}<td style="text-align:center"><div class="pip${t.bonusCompleted?' bx':''}">${t.bonusCompleted?'★':'—'}</div></td><td class="sbp">${t.score.toLocaleString()}</td></tr>`;
   }).join('');
 }
 function renderCards(){
   document.getElementById('fac-cards').innerHTML=GS.teams.map(t=>{
-    const ps=[0,1,2,3].map(n=>{const d=t.scenesCompleted.includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div>`;}).join('');
-    return`<div class="tcard"><div class="tcard-n">${t.name}</div><div class="tcard-s">${t.score.toLocaleString()}</div><div class="tcard-st">${t.scenesCompleted.length>=4?'✅ Complete':'Scene '+(t.currentScene+1)+' / 4'}</div><div class="tcard-pips">${ps}</div><div class="tcard-btns"><button class="mb gy" onclick="grantHint('${t.id}')">💡 Hint</button><button class="mb${t.bonusUnlocked?' gr':''}" onclick="grantBonus('${t.id}')" ${t.bonusUnlocked?'disabled':''}>${t.bonusUnlocked?'✓ Bonus':'🔓 Bonus'}</button></div></div>`;
+    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div>`;}).join('');
+    return`<div class="tcard"><div class="tcard-n">${t.name}</div><div class="tcard-s">${t.score.toLocaleString()}</div><div class="tcard-st">${(t.scenesCompleted||[]).length>=4?'✅ Complete':'Scene '+(t.currentScene+1)+' / 4'}</div><div class="tcard-pips">${ps}</div><div class="tcard-btns"><button class="mb gy" onclick="grantHint('${t.id}')">💡 Hint</button><button class="mb${t.bonusUnlocked?' gr':''}" onclick="grantBonus('${t.id}')" ${t.bonusUnlocked?'disabled':''}>${t.bonusUnlocked?'✓ Bonus':'🔓 Bonus'}</button></div></div>`;
   }).join('');
 }
 function renderBonusBtns(){document.getElementById('bonus-btns').innerHTML=GS.teams.map(t=>`<button class="fb${t.bonusUnlocked?'':' go'}" onclick="grantBonus('${t.id}')" ${t.bonusUnlocked?'disabled style="opacity:.35"':''}>${t.bonusUnlocked?'✓ '+t.name:'🔓 '+t.name}</button>`).join('');}
@@ -541,13 +541,12 @@ async function lookupGame(){
   const state=await dbGet(code);
   syncing(false);btn.textContent='Find Game →';btn.disabled=false;
   if(!state){showE('join-err','Game not found. Make sure the facilitator has created the game first, and you are using the same URL they used to create it.');return;}
-  if (!game.scenes) game.scenes = SCENES;
   document.getElementById('join-err').style.display='none';
   myGameId=code;GS=state;
   document.getElementById('join-team-list').innerHTML=state.teams.map(t=>
     `<button class="topt" onclick="joinTeam('${t.id}','${t.name.replace(/'/g,'')}')">
       <span style="font-size:22px">🕵️</span>
-      <div><div class="topt-n">${t.name}</div><div class="topt-s">${t.scenesCompleted.length} scenes done · ${t.score} pts</div></div>
+      <div><div class="topt-n">${t.name}</div><div class="topt-s">${(t.scenesCompleted||[]).length} scenes done · ${t.score} pts</div></div>
     </button>`).join('');
   document.getElementById('join-teams').style.display='block';
 }
@@ -566,14 +565,14 @@ function mt(){return GS&&GS.teams.find(t=>t.id===myTeamId);}
 function renderTeam(){
   const team=mt();if(!team)return;
   document.getElementById('gh-pts').textContent=team.score.toLocaleString()+' pts';
-  document.getElementById('gh-sc').textContent=team.scenesCompleted.length>=4?'Complete':'Scene '+(sceneIdx+1)+' / 4';
+  document.getElementById('gh-sc').textContent=(team.scenesCompleted||[]).length>=4?'Complete':'Scene '+(sceneIdx+1)+' / 4';
   const tr=GS.timeRemaining||0;
   const th=document.getElementById('gh-t');
   th.textContent=GS.status==='running'?fmt(tr):'';
   th.className='gh-t'+(tr<300?' urg':'');
   if(GS.status==='lobby'){renderWait('Waiting for the facilitator to start…');return;}
   if(GS.status==='ended'){renderComplete(team);return;}
-  if(team.scenesCompleted.length>=4){renderAllDone(team);return;}
+  if((team.scenesCompleted||[]).length>=4){renderAllDone(team);return;}
   renderEnvRoom(team);
 }
 function renderWait(msg){document.getElementById('gbody').innerHTML=`<div class="wait"><div class="wait-h">STAND BY</div><div class="sp" style="margin:1rem auto 1.5rem"></div><div class="wait-s">${msg}</div></div>`;}
@@ -593,7 +592,7 @@ function renderEnvRoom(team){
 }
 function openScene(idx){
   sceneIdx=idx;const sc=SCENES[idx];const team=mt();
-  const sub=team&&team.scenesCompleted.includes(idx);const p=picks[idx]||{};
+  const sub=team&&(team.scenesCompleted||[]).includes(idx);const p=picks[idx]||{};
   let h=`<div class="cf"><div class="cf-cls">CLASSIFIED</div><div class="cf-top"><button class="cf-back" onclick="renderEnvRoom(mt())">← Files</button><span class="cf-ic">${sc.icon}</span><div><div class="cf-h1">Scene ${idx+1}: ${sc.title}</div><div class="cf-h2">Case File ${idx+1} of 4</div></div></div>
   <div class="dos"><div class="dos-eye">Incident Report — JOJO Investigation Unit</div><div class="dos-title">${sc.icon} ${sc.title}</div><div class="dos-body">${sc.dossier.replace(/\n/g,'<br>')}</div></div>
   <div class="evs"><div class="dos-eye">Physical Evidence</div><div class="ev-grid">${sc.evidence.map(e=>`<div class="ev-card"><div class="ev-tag">${e.tag}</div><div class="ev-ic">${e.icon}</div><div class="ev-tx">${e.txt}</div></div>`).join('')}</div></div>`;
@@ -623,10 +622,10 @@ async function submitCode(idx){
   syncing(true,'Checking…');const f=await dbGet(myGameId);syncing(false);
   if(!f)return;GS=f;
   const team=GS.teams.find(t=>t.id===myTeamId);
-  if(!team||team.scenesCompleted.includes(idx))return;
+  if(!team||(team.scenesCompleted||[]).includes(idx))return;
   const isFirst=!GS.scenesFirstCracked[idx];
   const pts=(isFirst?PTS.first:PTS.crack)+(3*PTS.perQ);
-  team.score+=pts;team.scenesCompleted.push(idx);team.currentScene=Math.min(3,idx+1);
+  team.score+=pts;(team.scenesCompleted||[]).push(idx);team.currentScene=Math.min(3,idx+1);
   if(isFirst)GS.scenesFirstCracked[idx]=myTeamId;
   ann(`${isFirst?'🥇 FIRST! ':'✅ '}${team.name} cracked Scene ${idx+1} +${pts}pts`,isFirst?'hi':'');
   syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);
@@ -637,7 +636,7 @@ async function submitCode(idx){
   document.getElementById('ul-fi').textContent=isFirst?'⭐ FIRST TEAM TO CRACK THIS SCENE!':'';
   document.getElementById('ul').classList.add('on');
 }
-function dismissUnlock(){document.getElementById('ul').classList.remove('on');const team=mt();if(team&&team.scenesCompleted.length>=4){renderAllDone(team);return;}if(pendingUnlock)sceneIdx=Math.min(3,pendingUnlock.idx+1);renderTeam();}
+function dismissUnlock(){document.getElementById('ul').classList.remove('on');const team=mt();if(team&&(team.scenesCompleted||[]).length>=4){renderAllDone(team);return;}if(pendingUnlock)sceneIdx=Math.min(3,pendingUnlock.idx+1);renderTeam();}
 async function useHint(idx){syncing(true,'Applying…');const f=await dbGet(myGameId);syncing(false);if(!f)return;GS=f;const team=GS.teams.find(t=>t.id===myTeamId);if(!team||(team.hintsUsed||0)>=2){toast('No hint tokens left!','r');return;}team.hintsUsed=(team.hintsUsed||0)+1;team.score=Math.max(0,team.score-PTS.hint);hintSeen[idx]=true;ann(`💡 ${team.name} used hint on Scene ${idx+1} (−${PTS.hint}pts)`);syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);openScene(idx);}
 function openBonus(){const team=mt();document.getElementById('gbody').innerHTML=`<div class="bf"><div class="bf-head"><div class="bf-eye">👻 Bonus File — Unlocked</div><div class="bf-h">${BONUS.title}</div></div><div class="bf-body">${BONUS.body}</div><div class="bf-foot"><div class="bf-note">${BONUS.note}</div>${team&&!team.bonusCompleted?`<button class="btn-y" onclick="completeBonus()" style="max-width:none;font-size:16px">Mark as read — claim +${PTS.bonus} pts →</button>`:''}<button class="btn-g" style="max-width:none" onclick="renderEnvRoom(mt())">← Back to Investigation Room</button></div></div>`;}
 async function completeBonus(){syncing(true,'Claiming…');const f=await dbGet(myGameId);syncing(false);if(!f)return;GS=f;const team=GS.teams.find(t=>t.id===myTeamId);if(!team||team.bonusCompleted)return;team.bonusCompleted=true;team.score+=PTS.bonus;ann(`🌟 ${team.name} read Ghost of Bay 4! +${PTS.bonus}pts`,'bo');syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);toast('Bonus complete! +'+PTS.bonus+' pts','g');openBonus();}
@@ -675,7 +674,7 @@ function renderProj(){
   pc.textContent=fmt(tr);pc.className='proj-clk'+(tr<300?' urg':'');
   const s=[...GS.teams].sort((a,b)=>b.score-a.score);const m=['🥇','🥈','🥉',''];
   document.getElementById('proj-body').innerHTML=s.map((t,i)=>{
-    const ps=[0,1,2,3].map(n=>{const d=t.scenesCompleted.includes(n),f2=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="ppip${d?(f2?' ft':' dn'):''}">${d?'✓':n+1}</div></td>`;}).join('');
+    const ps=[0,1,2,3].map(n=>{const d=(t.scenesCompleted||[]).includes(n),f2=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="ppip${d?(f2?' ft':' dn'):''}">${d?'✓':n+1}</div></td>`;}).join('');
     return`<tr class="${i===0?'pr1':''}"><td style="font-size:clamp(14px,2.5vw,22px)">${m[Math.min(i,3)]||i+1}</td><td class="pn">${t.name}</td>${ps}<td style="text-align:center"><div class="ppip${t.bonusCompleted?' bx':''}">${t.bonusCompleted?'★':'—'}</div></td><td class="psc">${t.score.toLocaleString()}</td></tr>`;
   }).join('');
 }
