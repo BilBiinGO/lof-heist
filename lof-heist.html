@@ -577,7 +577,7 @@ function renderTeam(){
 }
 function renderWait(msg){document.getElementById('gbody').innerHTML=`<div class="wait"><div class="wait-h">STAND BY</div><div class="sp" style="margin:1rem auto 1.5rem"></div><div class="wait-s">${msg}</div></div>`;}
 function renderEnvRoom(team){
-  const done=team.scenesCompleted;
+  const done=(team.scenesCompleted||[]);
   let h=`<div class="env-room"><div class="env-intro">🔒 JOJO is in hospital. 4 case files need cracking.<br>Open each envelope in order. Solve the scene. Crack the code.</div><div class="env-grid">`;
   SCENES.forEach((sc,i)=>{
     const isDone=done.includes(i),isActive=i===sceneIdx&&!isDone,isLock=!isDone&&i>sceneIdx;
